@@ -1,0 +1,64 @@
+import json
+import time
+import paho.mqtt.client as mqtt
+
+# -- Constantes configuracion
+BROKER_HOST = "localhost"
+BROKER_PORT = 1883
+
+class GenericMQTTClient:
+    """
+    Cliente MQTT genérico y reutilizable.
+    NO contiene nada específico de turbinas ni payloads.
+    Métodos: connect, disconnect, publish, set_lwt, clear_retained.
+    """
+    def __init__(self, client_id: str = None, broker_host: str = BROKER_HOST, broker_port: int = BROKER_PORT):
+        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=client_id)
+        self.broker_host = broker_host
+        self.broker_port = broker_port
+        self._client_id = client_id or ""
+        # callbacks básicos opcionales (solo logging)
+        self.client.on_connect = self._on_connect
+        self.client.on_disconnect = self._on_disconnect
+
+    def _on_connect(self, client, userdata, flags, rc, properties=None):
+        print(f"[MQTT:{self._client_id}] connected rc={rc}")
+
+    def _on_disconnect(self, client, userdata, flags, rc, properties=None):
+        print(f"[MQTT:{self._client_id}] disconnected rc={rc}")
+
+    def set_lwt(self, topic: str, payload, qos: int = 1, retain: bool = True):
+        """
+        Configura el LWT para este cliente.
+        payload puede ser dict/str/bytes; si no es str/bytes se JSONifica.
+        """
+        if not isinstance(payload, (str, bytes)):
+            payload = json.dumps(payload)
+        self.client.will_set(topic, payload=payload, qos=qos, retain=retain)
+
+    def connect(self, keepalive: int = 60):
+        """Conecta y arranca el loop. Asume que set_lwt() (si se necesita) fue llamado antes."""
+        print(f"[MQTT:{self._client_id}] connecting to {self.broker_host}:{self.broker_port} ...")
+        self.client.connect(self.broker_host, self.broker_port, keepalive=keepalive)
+        self.client.loop_start()
+
+    def publish(self, topic: str, payload, qos: int = 0, retain: bool = False):
+        """
+        Publica en cualquier topic. Payload se serializa a JSON si no es str/bytes.
+        """
+        if not isinstance(payload, (str, bytes)):
+            payload = json.dumps(payload)
+        self.client.publish(topic, payload=payload, qos=qos, retain=retain)
+        print(f"--- Publicado en '{topic}': \n{payload}\n")
+
+    def clear_retained(self, topic: str):
+        """Limpia el mensaje retenido en 'topic' (publicando un payload vacío con retain=True)."""
+        self.client.publish(topic, payload="", retain=True)
+
+    def disconnect(self):
+        """Detiene loop y desconecta. No asume limpieza de topics (eso lo decide el caller)."""
+        self.client.loop_stop()
+        self.client.disconnect()
+
+
+
