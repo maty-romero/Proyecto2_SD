@@ -11,8 +11,9 @@ TOPIC_STATUS = "farm/turbine/status"
 
 class WindTurbine:
     def __init__(self, farm_id: int, turbine_id: int):
-        
         self.turbine_id = turbine_id
+        self.farm_id = farm_id
+        
         self.telemetry_topic = f"farms/{farm_id}/turbines/{turbine_id}/raw_telemetry"
         # self.status_topic = TOPIC_STATUS
         
@@ -26,7 +27,10 @@ class WindTurbine:
     def get_telemetry_data(self) -> dict:
         # Genera datos de turbina 
         return {
+            "farm_id": self.farm_id,
+            "farm_name": f"Farm-00{self.farm_id}",
             "turbine_id": self.turbine_id,
+            "turbine_name": f"T-00{self.turbine_id}",
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "wind_speed_mps": round(random.uniform(3.0, 25.0), 2),
             "wind_direction_deg": random.randint(0, 360),
