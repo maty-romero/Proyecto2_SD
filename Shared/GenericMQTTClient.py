@@ -55,10 +55,47 @@ class GenericMQTTClient:
         """Limpia el mensaje retenido en 'topic' (publicando un payload vacío con retain=True)."""
         self.client.publish(topic, payload="", retain=True)
 
+    def subscribe(self, topic: str, callback, qos: int = 0):
+        # Suscription & register a callback method to handle incoming messages
+        self.client.on_message = callback
+        self.client.subscribe(topic, qos=qos)
+        print(f"[MQTT:{self._client_id}] suscrito a '{topic}' con QoS={qos}")
+
+
     def disconnect(self):
         """Detiene loop y desconecta. No asume limpieza de topics (eso lo decide el caller)."""
         self.client.loop_stop()
         self.client.disconnect()
 
+
+"""
+Ejemplo uso GenericMQTTClient - Como Suscriptor
+
+def message_handler(client, userdata, msg):
+    payload = msg.payload.decode()
+    try:
+        data = json.loads(payload)
+    except json.JSONDecodeError:
+        data = payload
+    print(f"Recibido en '{msg.topic}': {data}")
+
+# Instancia genérica
+mqtt_sub = GenericMQTTClient(client_id="subscriber1")
+
+# Conectar al broker
+mqtt_sub.connect()
+
+# Suscribirse a un topic
+mqtt_sub.subscribe("farm/turbine/telemetry", message_handler)
+
+# Mantener el loop activo (en un script simple)
+import time
+try:
+    while True:
+        time.sleep(1)
+except KeyboardInterrupt:
+    mqtt_sub.disconnect()
+
+"""
 
 

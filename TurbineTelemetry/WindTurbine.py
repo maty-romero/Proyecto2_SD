@@ -2,21 +2,24 @@ import random
 import threading
 import time
 
-from GenericMQTTClient import GenericMQTTClient
+from Shared.GenericMQTTClient import GenericMQTTClient
 
-TOPIC_TELEMETRY = "farm/turbine/telemetry"
+
+# TOPIC_TELEMETRY = "farms/{farm_id}/turbines/+/raw_telemetry"  
+#TOPIC_TELEMETRY = "farms/1/turbines/+/raw_telemetry" # Para pruebas
 TOPIC_STATUS = "farm/turbine/status"
-# TOPIC_ALERTS = "farm/turbine/alerts"  topico del backend history/alerts
 
 class WindTurbine:
-    def __init__(self, turbine_id: str):
+    def __init__(self, farm_id: int, turbine_id: int):
+        
         self.turbine_id = turbine_id
-        self.telemetry_topic = TOPIC_TELEMETRY
+        self.telemetry_topic = f"farms/{farm_id}/turbines/{turbine_id}/raw_telemetry"
         # self.status_topic = TOPIC_STATUS
         
         # cliente mqtt con id unico
-        self.mqtt_client = GenericMQTTClient(client_id=self.turbine_id) # T-001, T-002, etc 
-        self.publish_interval = 15 # segundos
+        str_turbine_id = f"T-00{self.turbine_id}" # T-001, T-002, etc 
+        self.mqtt_client = GenericMQTTClient(client_id=str_turbine_id) 
+        self.publish_interval = 5 # segundos
         self._stop_event = threading.Event()
         self._thread = None
 
@@ -60,7 +63,7 @@ class WindTurbine:
             data: dict = self.get_telemetry_data()
             # el payload lo crea la entidad; el cliente solo publica en el topic que se le pasa
             # conversion data a JSON lo hace mqtt_client 
-            self.mqtt_client.publish(TOPIC_TELEMETRY, data, qos=0, retain=False)
+            self.mqtt_client.publish(self.telemetry_topic, data, qos=0, retain=False)
             self._stop_event.wait(self.publish_interval)
 
     def stop(self):

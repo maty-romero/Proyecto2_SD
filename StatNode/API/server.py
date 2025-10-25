@@ -7,7 +7,7 @@ def hello_geek():
     return '<h1>Hello from Flask & Docker</h2>'
 
 # Testing - EMQX RULE → Endpoint POST 
-@app.route('/test', methods=['POST'])
+@app.route('/farm/{id_farm}/turbines/telemetry ', methods=['POST'])
 def emqx_receiver():
     # Obtener los datos JSON enviados por EMQX 
     data = request.get_json(force=True)
